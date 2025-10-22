@@ -1,71 +1,224 @@
+// src/components/Reports/Messages.jsx
 import {
   Paper,
   Typography,
-  Box,
   TextField,
   Button,
+  Box,
   Stack,
+  Chip,
 } from "@mui/material";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import SendIcon from "@mui/icons-material/Send";
-import SearchIcon from "@mui/icons-material/Search";
+import { useState, useEffect } from "react";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import api from "../../api/axios"; // adjust path if needed
 
-const Messages = ({ messages = [] }) => {
+const Messages = ({ comments = [], password, userRole = "reporter", onNewMessage }) => {
+  const [commentsState, setCommentsState] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]); // local File objects
+  const [loading, setLoading] = useState(false);
+
+  // sync local state when parent comments prop changes
+  useEffect(() => {
+    setCommentsState(Array.isArray(comments) ? comments : []);
+  }, [comments]);
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles((prev) => [...prev, ...files]);
+  };
+
+  const handleRemoveSelectedFile = (index) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatRole = (role) => (role ? role.charAt(0).toUpperCase() + role.slice(1) : "Unknown");
+
+  const getBgColor = (role) => {
+    switch (role) {
+      case "reporter":
+        return "#ffcc80";
+      case "admin":
+        return "#f57c00";
+      case "agency":
+        return "#81c784";
+      default:
+        return "#e0e0e0";
+    }
+  };
+
+  const getTextColor = (role) => (role === "admin" ? "white" : "black");
+
+  const handleSend = async () => {
+    if (!newMessage.trim() && selectedFiles.length === 0) return;
+
+    if (!password) {
+      // password must be provided (parent should pass it from route)
+      alert("Case password is required to send a follow-up.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+      formData.append("password", password);
+      formData.append("message", newMessage);
+
+      // append files only if reporter and files selected
+      if (userRole === "reporter" && selectedFiles.length > 0) {
+        selectedFiles.forEach((file) => {
+          formData.append("files", file);
+        });
+      }
+
+      // send to backend (multipart/form-data)
+      const res = await api.post("/reports/message", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const data = res.data;
+      if (data && data.success) {
+        // backend returns data.comments and data.evidenceFiles
+        // update local comments state by appending returned comments (if any)
+        if (Array.isArray(data.data?.comments) && data.data.comments.length > 0) {
+          setCommentsState((prev) => [...prev, ...data.data.comments]);
+        }
+
+        // notify parent so it can update evidenceFiles and comments globally
+        onNewMessage?.(data.data);
+
+        // reset composer
+        setNewMessage("");
+        setSelectedFiles([]);
+      } else {
+        alert(data?.message || "Failed to send message");
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+      alert(err.response?.data?.message || "Error sending message");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Paper
-      variant="outlined"
-      sx={{ p: 2, display: "flex", flexDirection: "column", height: "100%" }}>
-      <Typography variant="h6" fontWeight="bold" gutterBottom>
+      sx={{
+        p: 2,
+        mb: 3,
+        display: "flex",
+        flexDirection: "column",
+        height: 520,
+      }}
+    >
+      <Typography variant="h6" gutterBottom>
         Messages
       </Typography>
-      {/* messages section grows */}
-      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-        {messages.length === 0 ? (
-          <Box textAlign="center" sx={{ py: 5 }}>
-            <SearchIcon sx={{ fontSize: 48, color: "gray" }} />
-            <Typography>No one has responded to this case</Typography>
+
+      {/* Messages Thread */}
+      <Box sx={{ flexGrow: 1, overflowY: "auto", mb: 2 }}>
+        {commentsState.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: "center", color: "text.secondary" }}>
+            <Typography variant="body2">No one has responded to this case</Typography>
           </Box>
         ) : (
-          <Box>Messages go here...</Box>
+          commentsState.map((msg, index) => (
+            <Box
+              key={msg._id || `msg-${index}`}
+              sx={{
+                display: "flex",
+                justifyContent: msg.role === "admin" ? "flex-end" : "flex-start",
+                mb: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  maxWidth: "70%",
+                  bgcolor: getBgColor(msg.role),
+                  color: getTextColor(msg.role),
+                }}
+              >
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                  {msg.message}
+                </Typography>
+
+                {/* role label */}
+                <Typography
+                  variant="caption"
+                  display="block"
+                  sx={{
+                    mt: 0.5,
+                    fontStyle: "italic",
+                    fontWeight: "bold",
+                    color: "rgba(0,0,0,0.7)",
+                  }}
+                >
+                  — {formatRole(msg.role)}
+                </Typography>
+
+                {/* timestamp */}
+                <Typography variant="caption" display="block" sx={{ opacity: 0.6 }}>
+                  {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
+                </Typography>
+              </Box>
+            </Box>
+          ))
         )}
       </Box>
 
-      {/* input stays pinned at bottom */}
-      <Box sx={{ mt: 2 }}>
+      {/* Input Area */}
+      <Box>
         <TextField
           fullWidth
           multiline
-          rows={4}
+          rows={2}
           placeholder="Write a message"
-          variant="outlined"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          sx={{ mb: 2 }}
+          disabled={loading}
         />
-        <Stack direction="row" justifyContent={"space-between"} sx={{ mt: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<UploadFileIcon />}
-            sx={{
-              color: "#ff8c00",
-              py: 1,
-              fontWeight: "bold",
-              borderRadius: 1.5,
-              textTransform: "none",
-              borderColor: "#ff8c00",
-              "&:hover": {
-                borderColor: "#e67a00",
-                backgroundColor: "rgba(255,140,0,0.04)",
-              },
-            }}>
-            Upload file
-          </Button>
+
+        {/* show selected filenames (if any) */}
+        {selectedFiles.length > 0 && (
+          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+            {selectedFiles.map((f, i) => (
+              <Chip
+                key={f.name + "-" + i}
+                icon={<InsertDriveFileIcon />}
+                label={f.name}
+                size="small"
+                sx={{ bgcolor: "white" }}
+                onDelete={() => handleRemoveSelectedFile(i)}
+              />
+            ))}
+          </Stack>
+        )}
+
+        <Stack direction="row" spacing={2} justifyContent="flex-end">
+          {userRole === "reporter" && (
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileIcon />}
+              disabled={loading}
+            >
+              Evidence file
+              <input type="file" hidden multiple onChange={handleFileChange} />
+            </Button>
+          )}
+
           <Button
             variant="contained"
-            endIcon={<SendIcon />}
-            sx={{
-              backgroundColor: "#ff8c00",
-              textTransform: "none",
-              "&:hover": { backgroundColor: "#e67a00" },
-            }}>
-            Send message
+            color="warning"
+            onClick={handleSend}
+            disabled={loading}
+          >
+            {loading ? "Sending..." : "Send message"}
           </Button>
         </Stack>
       </Box>

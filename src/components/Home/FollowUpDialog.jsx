@@ -10,19 +10,39 @@ import {
   TextField,
   Typography,
   Box,
+  CircularProgress,
 } from "@mui/material";
+import api from "../../api/axios";
 
 const FollowUpDialog = ({ open, onClose, onSubmit }) => {
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = () => {
-    if (!password) return;
+  const handleSubmit = async () => {
+    if (!password) return setError("Please enter your password.");
 
-    // For now: just simulate successful password entry
-    // Later, we can verify with backend
-    navigate(`/follow-up/${password}`);
-    onClose();
+    setError("");
+    setLoading(true);
+
+    try {
+      // POST to backend for validation
+      const res = await api.post("/reports/follow-up", { password });
+
+      if (res.data.success) {
+        navigate(`/follow-up/${password}`);
+        onClose();
+      } else {
+        setError(res.data.message || "Invalid password. Please try again.");
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Invalid password. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,28 +65,31 @@ const FollowUpDialog = ({ open, onClose, onSubmit }) => {
             variant="outlined"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={!!error}
+            helperText={error}
           />
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="inherit"
-          sx={{ textTransform: "none" }}>
+        <Button onClick={onClose} variant="outlined" color="inherit">
           ❌ Cancel
         </Button>
 
         <Button
           onClick={handleSubmit}
           variant="contained"
+          disabled={loading}
           sx={{
             backgroundColor: "#ff8c00",
             textTransform: "none",
             "&:hover": { backgroundColor: "#e67a00" },
           }}>
-          Go to report
+          {loading ? (
+            <CircularProgress size={24} sx={{ color: "#fff" }} />
+          ) : (
+            "Go to report"
+          )}
         </Button>
       </DialogActions>
     </Dialog>

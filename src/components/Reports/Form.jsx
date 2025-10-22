@@ -14,30 +14,34 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-
 import api from "../../api/axios";
 
-const MAX_FILE_SIZE = 100 * 1024 * 10; // 100 MB
+const MAX_FILE_SIZE = 100 * 1024 * 10; // 10 MB
 
 export default function ReportingForm() {
   const navigate = useNavigate();
 
-  const [reportType, setReportType] = useState("anonymous");
+  const [reporterType, setReportType] = useState("anonymous");
   const [form, setForm] = useState({
-    subject: "",
+    title: "",
     description: "",
-    incidentLocation: "",
-    name: "",
-    phone: "",
-    email: "",
-    files: [],
+    location: "",
+    reporterName: "",
+    reporterPhone: "",
+    reporterEmail: "",
+    evidenceFiles: [],
   });
   const [fileErrors, setFileErrors] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleReportTypeChange = (type) => {
     if (type === "anonymous") {
-      setForm((f) => ({ ...f, name: "", phone: "", email: "" }));
+      setForm((f) => ({
+        ...f,
+        reporterName: "",
+        reporterPhone: "",
+        reporterEmail: "",
+      }));
     }
     setReportType(type);
   };
@@ -52,52 +56,81 @@ export default function ReportingForm() {
     const files = Array.from(e.target.files || []);
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
-        setFileErrors(`File "${file.name}" exceeds 100MB limit.`);
+        setFileErrors(`File "${file.name}" exceeds 10MB limit.`);
         return;
       }
     }
-    setForm((f) => ({ ...f, files }));
+    setForm((f) => ({ ...f, evidenceFiles: files }));
   };
 
   const removeFile = (index) => {
     setForm((f) => {
-      const newFiles = [...f.files];
+      const newFiles = [...f.evidenceFiles];
       newFiles.splice(index, 1);
-      return { ...f, files: newFiles };
+      return { ...f, evidenceFiles: newFiles };
     });
   };
 
-  const handleSubmit = (e) => {
-
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFileErrors("");
 
-    if (!form.subject.trim()) return alert("Please enter subject.");
+    if (!form.title.trim()) return alert("Please enter title.");
     if (!form.description.trim()) return alert("Please enter description.");
-    if (!form.incidentLocation.trim())
+    if (!form.location.trim())
       return alert("Please enter incident location.");
-    if (form.files.some((f) => f.size > MAX_FILE_SIZE)) {
+    if (form.evidenceFiles.some((f) => f.size > MAX_FILE_SIZE)) {
       setFileErrors("One or more files exceed the 100MB limit.");
       return;
     }
 
-    setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-    setTimeout(() => {
-      //const trackingId = `WB-${Date.now().toString().slice(-6)}`;
-      navigate("/report-submitted", { state: { caseId, password } });
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+      formData.append("location", form.location);
+      formData.append("reporterType", reporterType);
+
+      if (reporterType === "confidential") {
+        formData.append("reporterName", form.reporterName);
+        formData.append("reporterPhone", form.reporterPhone);
+        formData.append("reporterEmail", form.reporterEmail);
+      }
+
+      form.evidenceFiles.forEach((file) =>
+        formData.append("evidenceFiles", file)
+      );
+
+      const response = await api.post("/reports", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const { caseID, generatedPassword } = response.data.data;
+      let password = generatedPassword;
+
+      navigate("/report-submitted", { state: { caseID, password } });
+
       setForm({
-        subject: "",
+        title: "",
         description: "",
-        incidentLocation: "",
-        name: "",
-        phone: "",
-        email: "",
-        files: [],
+        location: "",
+        reporterName: "",
+        reporterPhone: "",
+        reporterEmail: "",
+        evidenceFiles: [],
       });
       setReportType("anonymous");
+    } catch (error) {
+      console.error(error);
+      alert(
+        error.response?.data?.message ||
+          "Error submitting report. Please try again."
+      );
+    } finally {
       setSubmitting(false);
-    }, 900);
+    }
   };
 
   return (
@@ -114,7 +147,8 @@ export default function ReportingForm() {
 
       <Paper
         variant="outlined"
-        sx={{ p: 3, backgroundColor: "#d9d9d9", borderColor: "#bdbdbd" }}>
+        sx={{ p: 3, backgroundColor: "#d9d9d9", borderColor: "#bdbdbd" }}
+      >
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
           Create New Report
         </Typography>
@@ -128,10 +162,10 @@ export default function ReportingForm() {
             <TextField
               fullWidth
               size="small"
-              name="subject"
-              value={form.subject}
+              name="title"
+              value={form.title}
               onChange={handleChange}
-              placeholder="Brief subject"
+              placeholder="Brief title"
               sx={{ backgroundColor: "#fff" }}
             />
           </Box>
@@ -150,16 +184,17 @@ export default function ReportingForm() {
                   alignItems: "flex-start",
                   gap: 2,
                   p: 2,
-                  bgcolor: reportType === "anonymous" ? "#fff" : "#fafafa",
+                  bgcolor: reporterType === "anonymous" ? "#fff" : "#fafafa",
                   border: "1px solid #cfcfcf",
                   borderLeft:
-                    reportType === "anonymous"
+                    reporterType === "anonymous"
                       ? "6px solid #ff8c00"
                       : "1px solid #cfcfcf",
                   cursor: "pointer",
-                }}>
+                }}
+              >
                 <Radio
-                  checked={reportType === "anonymous"}
+                  checked={reporterType === "anonymous"}
                   value="anonymous"
                   sx={{ mt: 0.5 }}
                 />
@@ -179,16 +214,17 @@ export default function ReportingForm() {
                   alignItems: "flex-start",
                   gap: 2,
                   p: 2,
-                  bgcolor: reportType === "confidential" ? "#fff" : "#fafafa",
+                  bgcolor: reporterType === "confidential" ? "#fff" : "#fafafa",
                   border: "1px solid #cfcfcf",
                   borderLeft:
-                    reportType === "confidential"
+                    reporterType === "confidential"
                       ? "6px solid #ff8c00"
                       : "1px solid #cfcfcf",
                   cursor: "pointer",
-                }}>
+                }}
+              >
                 <Radio
-                  checked={reportType === "confidential"}
+                  checked={reporterType === "confidential"}
                   value="confidential"
                   sx={{ mt: 0.5 }}
                 />
@@ -224,7 +260,7 @@ export default function ReportingForm() {
           </Box>
 
           {/* Confidential details */}
-          {reportType === "confidential" && (
+          {reporterType === "confidential" && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Your details (visible only to case handlers)
@@ -234,9 +270,9 @@ export default function ReportingForm() {
                   <TextField
                     fullWidth
                     size="small"
-                    name="name"
+                    name="reporterName"
                     label="Name"
-                    value={form.name}
+                    value={form.reporterName}
                     onChange={handleChange}
                     sx={{ backgroundColor: "#fff" }}
                   />
@@ -245,9 +281,9 @@ export default function ReportingForm() {
                   <TextField
                     fullWidth
                     size="small"
-                    name="phone"
+                    name="reporterPhone"
                     label="Phone (optional)"
-                    value={form.phone}
+                    value={form.reporterPhone}
                     onChange={handleChange}
                     sx={{ backgroundColor: "#fff" }}
                   />
@@ -256,9 +292,9 @@ export default function ReportingForm() {
                   <TextField
                     fullWidth
                     size="small"
-                    name="email"
+                    name="reporterEmail"
                     label="Email (optional)"
-                    value={form.email}
+                    value={form.reporterEmail}
                     onChange={handleChange}
                     sx={{ backgroundColor: "#fff" }}
                   />
@@ -275,8 +311,8 @@ export default function ReportingForm() {
             <TextField
               fullWidth
               size="small"
-              name="incidentLocation"
-              value={form.incidentLocation}
+              name="location"
+              value={form.location}
               onChange={handleChange}
               placeholder="Street, landmark, or GPS"
               sx={{ backgroundColor: "#fff" }}
@@ -286,7 +322,7 @@ export default function ReportingForm() {
           {/* Files */}
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Files
+              Evidence Files
             </Typography>
 
             <label htmlFor="file-upload">
@@ -308,7 +344,8 @@ export default function ReportingForm() {
                   textAlign: "center",
                   cursor: "pointer",
                   bgcolor: "#f7f7f7",
-                }}>
+                }}
+              >
                 <CloudUploadIcon sx={{ fontSize: 36, mb: 1 }} />
                 <Typography>Upload file (100mb max)</Typography>
               </Box>
@@ -320,9 +357,9 @@ export default function ReportingForm() {
               </FormHelperText>
             )}
 
-            {form.files.length > 0 && (
+            {form.evidenceFiles.length > 0 && (
               <Stack spacing={1} sx={{ mt: 2 }}>
-                {form.files.map((f, i) => (
+                {form.evidenceFiles.map((f, i) => (
                   <Box
                     key={i}
                     sx={{
@@ -332,7 +369,8 @@ export default function ReportingForm() {
                       border: "1px solid #ddd",
                       p: 1,
                       borderRadius: 1,
-                    }}>
+                    }}
+                  >
                     <Typography variant="body2">{f.name}</Typography>
                     <Button size="small" onClick={() => removeFile(i)}>
                       Remove
@@ -356,7 +394,8 @@ export default function ReportingForm() {
                 textTransform: "none",
                 fontWeight: "bold",
               }}
-              disabled={submitting}>
+              disabled={submitting}
+            >
               {submitting ? "Submitting..." : "Submit"}
             </Button>
           </Box>

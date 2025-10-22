@@ -15,7 +15,6 @@ const Buttons = () => {
 
   const handleSubmit = (password) => {
     console.log("Password submitted:", password);
-    // TODO: redirect or call API to check report status
   };
   return (
     <Box sx={{ mt: 4 }}>

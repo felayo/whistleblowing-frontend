@@ -29,7 +29,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/guide" element={<Guide />} />
         <Route path="/create-report" element={<CreateReport />} />
-        <Route path="/follow-up/:caseId" element={<ReportDetails />} />
+        <Route path="/follow-up/:password" element={<ReportDetails />} />
         <Route path="/report-submitted" element={<ReportSubmitted />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/cases" element={<AdminCasesPage />} />
