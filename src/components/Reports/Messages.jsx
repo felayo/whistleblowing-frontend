@@ -1,4 +1,3 @@
-// src/components/Reports/Messages.jsx
 import {
   Paper,
   Typography,
@@ -11,12 +10,12 @@ import {
 import { useState, useEffect } from "react";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import api from "../../api/axios"; // adjust path if needed
+import api from "../../api/axios"; 
 
-const Messages = ({ comments = [], password, userRole = "reporter", onNewMessage }) => {
+const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
   const [commentsState, setCommentsState] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState([]); // local File objects
+  const [selectedFiles, setSelectedFiles] = useState([]); 
   const [loading, setLoading] = useState(false);
 
   // sync local state when parent comments prop changes
@@ -54,7 +53,6 @@ const Messages = ({ comments = [], password, userRole = "reporter", onNewMessage
     if (!newMessage.trim() && selectedFiles.length === 0) return;
 
     if (!password) {
-      // password must be provided (parent should pass it from route)
       alert("Case password is required to send a follow-up.");
       return;
     }
@@ -69,7 +67,7 @@ const Messages = ({ comments = [], password, userRole = "reporter", onNewMessage
       // append files only if reporter and files selected
       if (userRole === "reporter" && selectedFiles.length > 0) {
         selectedFiles.forEach((file) => {
-          formData.append("files", file);
+          formData.append("evidenceFiles", file);
         });
       }
 

@@ -8,7 +8,6 @@ import {
   Paper,
   Grid,
   Chip,
-  Divider,
   Stack,
 } from "@mui/material";
 
@@ -130,6 +129,7 @@ const ReportDetailsPage = () => {
               <Messages
                 comments={comments || []}
                 password={password}
+                userRole={reporterType} // pass reporterType as userRole
                 onNewMessage={(updatedData) => {
                   setComments(updatedData.comments || []);
                   setEvidenceFiles(updatedData.evidenceFiles || []);
