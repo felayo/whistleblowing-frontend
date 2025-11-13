@@ -12,7 +12,7 @@ import {
   Box,
   CircularProgress,
 } from "@mui/material";
-import api from "../../api/axios";
+import { api } from "../../api/axios";
 
 const FollowUpDialog = ({ open, onClose, onSubmit }) => {
   const [password, setPassword] = useState("");

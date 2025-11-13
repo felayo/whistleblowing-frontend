@@ -1,6 +1,6 @@
 import { Container } from "@mui/material";
 
-import Navbar from "../components/Global/Navbar";
+import Navbar from "../components/Home/Navbar";
 import NavMenu from "../components/Home/NavMenu";
 import Hero from "../components/Home/HeroHome";
 import Buttons from "../components/Home/Buttons";

@@ -10,7 +10,7 @@ import {
 import { useState, useEffect } from "react";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import api from "../../api/axios"; 
+import { api } from "../../api/axios"; 
 
 const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
   const [commentsState, setCommentsState] = useState([]);

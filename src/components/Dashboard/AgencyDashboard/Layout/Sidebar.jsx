@@ -1,3 +1,4 @@
+import { useContext } from "react";
 import { Link } from "react-router-dom";
 import logo from "../../../../assets/lagos.png";
 import {
@@ -9,6 +10,7 @@ import {
   Box,
   Button,
 } from "@mui/material";
+import { AuthContext } from "../../../../context/AuthContext";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import DescriptionIcon from "@mui/icons-material/Description";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -23,6 +25,7 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
+  const { logout } = useContext(AuthContext);
   return (
     <Drawer variant="permanent" sx={{ width: 240, flexShrink: 0 }}>
       <Box
@@ -63,6 +66,7 @@ const Sidebar = () => {
           <Button
             fullWidth
             variant="outlined"
+            onClick={logout}
             startIcon={<ExitToAppIcon />}
             sx={{
               textTransform: "none",

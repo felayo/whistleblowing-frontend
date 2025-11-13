@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import api from "../../api/axios";
+import { api } from "../../api/axios";
 
 const MAX_FILE_SIZE = 100 * 1024 * 10; // 10 MB
 

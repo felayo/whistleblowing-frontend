@@ -1,6 +1,13 @@
-import { useNavigate } from "react-router-dom";
-
-import { Box, Typography, Grid, Button, IconButton } from "@mui/material";
+import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Grid,
+  Button,
+  IconButton,
+  CircularProgress,
+} from "@mui/material";
 import Sidebar from "../../components/Dashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/Layout/Navbar";
 import CaseDetailsInfo from "../../components/Dashboard/Cases/CaseDetailsInfo";
@@ -9,28 +16,36 @@ import CaseTools from "../../components/Dashboard/Cases/CaseTools";
 import CaseInternalNotes from "../../components/Dashboard/Cases/CaseInternalNotes";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-
-const mockCase = {
-  date: "18 Sept 2024, 11:53:46",
-  subject: "Vandalism of Transformer",
-  description: "This guy was seen removing transformer components.",
-  name: "",
-  phone: "",
-  email: "",
-  location: "Ikeja, Lagos",
-};
+import { useReport } from "../../context/ReportContext";
 
 const CaseDetailsPage = () => {
   const navigate = useNavigate();
+  const { caseId } = useParams();
+
+  const { selectedReport, fetchReportById } = useReport();
+  // 🧠 Fetch the report details once we have the id
+  useEffect(() => {
+    if (caseId) fetchReportById(caseId);
+  }, [caseId]);
+
+  // Not found or still loading
+  if (!selectedReport) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+        <CircularProgress sx={{ color: "#ff8c00" }} />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ display: "flex" }}>
       <Sidebar />
 
-      {/* Main Content Area */}
       <Box sx={{ flexGrow: 1, bgcolor: "#d9d9d9", minHeight: "100vh" }}>
         <Navbar />
 
         <Box sx={{ p: 3, mt: 8 }}>
+          {/* Header Section */}
           <Box
             sx={{
               display: "flex",
@@ -40,8 +55,10 @@ const CaseDetailsPage = () => {
               pl: 2,
               pt: 4,
             }}>
-            <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => navigate(-1)}>
-              <IconButton  aria-label="Go back">
+            <Box
+              sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+              onClick={() => navigate(-1)}>
+              <IconButton aria-label="Go back">
                 <ArrowBackIcon />
               </IconButton>
               <Typography variant="body1" sx={{ fontWeight: "bold" }}>
@@ -59,7 +76,10 @@ const CaseDetailsPage = () => {
                 fontWeight: "bold",
                 backgroundColor: "#f6f6f6",
                 textTransform: "none",
-              }}>
+              }}
+              onClick={() =>
+                console.log("Exporting case:", selectedReport._id)
+              }>
               Export
             </Button>
           </Box>
@@ -67,18 +87,14 @@ const CaseDetailsPage = () => {
           <Grid container spacing={3}>
             {/* Left Column */}
             <Grid item xs={12} md={8}>
-              <CaseDetailsInfo caseData={mockCase} />
-              <CaseMessages />
+              <CaseDetailsInfo caseData={selectedReport} />
+              <CaseMessages caseId={selectedReport._id} />
             </Grid>
 
             {/* Right Column */}
             <Grid item xs={12} md={4}>
-              <CaseTools
-                category="Graffiti"
-                status="Resolved"
-                assignedTo="KAI"
-              />
-              <CaseInternalNotes />
+              <CaseTools report={selectedReport} />
+              <CaseInternalNotes caseId={selectedReport._id} />
             </Grid>
           </Grid>
         </Box>
@@ -87,4 +103,4 @@ const CaseDetailsPage = () => {
   );
 };
 
-export default CaseDetailsPage; // Dashboard.jsx
+export default CaseDetailsPage;

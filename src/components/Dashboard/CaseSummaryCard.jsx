@@ -1,18 +1,43 @@
-// components/DashboardStats.jsx
 import { Grid, Paper, Typography } from "@mui/material";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
-
-const stats = [
-  { label: "Total Cases", value: 120, icon: <FolderOpenIcon fontSize="large" />, color: "#1976d2" },
-  { label: "New Cases", value: 45, icon: <NewReleasesIcon fontSize="large" />, color: "#ff9800" },
-  { label: "Open Cases", value: 60, icon: <CheckCircleIcon fontSize="large" />, color: "#4caf50" },
-  { label: "Closed Cases", value: 15, icon: <DoneAllIcon fontSize="large" />, color: "#9c27b0" },
-];
-
+import { useReport } from "../../context/ReportContext";
 const CaseSummaryCard = () => {
+  const { reports, reportCount } = useReport();
+
+  const resolvedCases =
+    reports?.filter((r) => r.status === "resolved").length || 0;
+  const closedCases = reports?.filter((r) => r.status === "closed").length || 0;
+  const openCases = reports?.filter((r) => r.status !== "closed").length || 0;
+
+  const stats = [
+    {
+      label: "Total Cases",
+      value: reportCount || 0,
+      icon: <FolderOpenIcon fontSize="large" />,
+      color: "#1976d2",
+    },
+    {
+      label: "Resolved Cases",
+      value: resolvedCases,
+      icon: <CheckCircleIcon fontSize="large" />,
+      color: "#4caf50",
+    },
+    {
+      label: "Open Cases",
+      value: openCases,
+      icon: <NewReleasesIcon fontSize="large" />,
+      color: "#ff9800",
+    },
+    {
+      label: "Closed Cases",
+      value: closedCases,
+      icon: <DoneAllIcon fontSize="large" />,
+      color: "#9c27b0",
+    },
+  ];
   return (
     <Grid container spacing={2} sx={{ mt: 3 }}>
       {stats.map((stat) => (
@@ -28,8 +53,7 @@ const CaseSummaryCard = () => {
               textAlign: "center",
               borderTop: `4px solid ${stat.color}`,
               borderRadius: 2,
-            }}
-          >
+            }}>
             <Typography sx={{ color: stat.color, mb: 1 }}>
               {stat.icon}
             </Typography>

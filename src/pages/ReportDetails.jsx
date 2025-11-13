@@ -11,11 +11,11 @@ import {
   Stack,
 } from "@mui/material";
 
-import Navbar from "../components/Global/Navbar";
+import Navbar from "../components/Home/Navbar";
 import CaseDetails from "../components/Reports/CaseDetails";
 import Messages from "../components/Reports/Messages";
 import FilePreview from "../components/FilePreview";
-import api from "../api/axios";
+import { api } from "../api/axios";
 
 const ReportDetailsPage = () => {
   const { password } = useParams();

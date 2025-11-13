@@ -1,5 +1,5 @@
 import { Container } from "@mui/material";
-import Navbar from "../components/Global/Navbar";
+import Navbar from "../components/Home/Navbar";
 import Form from "../components/Reports/Form";
 
 const Report = () => {
