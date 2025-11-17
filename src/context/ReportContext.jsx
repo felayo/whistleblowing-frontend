@@ -33,7 +33,6 @@ export const ReportProvider = ({ children }) => {
       const { data } = await axiosPrivate.get(
         `/admin/reports${query ? `?${query}` : ""}`
       );
-
       if (data?.success) {
         setReports(data.data || []);
         setPagination({
@@ -41,7 +40,7 @@ export const ReportProvider = ({ children }) => {
           totalPages: data.totalPages || 1,
           totalReports: data.totalReports || 0,
         });
-        setReportCount(data.count || 0);
+        setReportCount(data.totalReports || 0);
       } else {
         setReports([]);
       }
@@ -98,6 +97,13 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
+  // ========== UPDATE SELECTED REPORT COMMENTS ==========
+  const updateSelectedReportComments = (newComments) => {
+    setSelectedReport((prev) =>
+      prev ? { ...prev, comments: newComments } : prev
+    );
+  };
+
   // ✅ Wait for token before fetching
   useEffect(() => {
     if (!token) return;
@@ -108,8 +114,8 @@ export const ReportProvider = ({ children }) => {
 
     // Poll every 60 seconds for unassigned reports
     const interval = setInterval(() => {
-      fetchUnassignedReports(); // Only refetch unassigned 
-    }, 15_000);
+      fetchUnassignedReports(); // Only refetch unassigned
+    }, 60_000);
 
     return () => clearInterval(interval); // Cleanup
   }, [token]);
@@ -122,13 +128,14 @@ export const ReportProvider = ({ children }) => {
         unassignedReports,
         selectedReport,
         pagination,
-        loadingList, 
-        loadingReport, 
+        loadingList,
+        loadingReport,
         loading: loadingList || loadingReport,
         error,
         fetchAllReports,
         fetchUnassignedReports,
         fetchReportById,
+        updateSelectedReportComments,
       }}>
       {children}
     </ReportContext.Provider>

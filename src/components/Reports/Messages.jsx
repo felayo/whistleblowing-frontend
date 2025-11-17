@@ -10,15 +10,24 @@ import {
 import { useState, useEffect } from "react";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import { api } from "../../api/axios"; 
+import { api } from "../../api/axios";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 
-const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
+const Messages = ({
+  comments = [],
+  password,
+  userRole,
+  onNewMessage,
+  reportId,
+}) => {
   const [commentsState, setCommentsState] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState([]); 
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // sync local state when parent comments prop changes
+  const axiosPrivate = useAxiosPrivate();
+
+  // Sync with parent
   useEffect(() => {
     setCommentsState(Array.isArray(comments) ? comments : []);
   }, [comments]);
@@ -32,7 +41,8 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const formatRole = (role) => (role ? role.charAt(0).toUpperCase() + role.slice(1) : "Unknown");
+  const formatRole = (role) =>
+    role ? role.charAt(0).toUpperCase() + role.slice(1) : "Unknown";
 
   const getBgColor = (role) => {
     switch (role) {
@@ -49,45 +59,86 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
 
   const getTextColor = (role) => (role === "admin" ? "white" : "black");
 
+  // ------------------------------
+  // MAIN SEND HANDLER
+  // ------------------------------
   const handleSend = async () => {
     if (!newMessage.trim() && selectedFiles.length === 0) return;
-
-    if (!password) {
-      alert("Case password is required to send a follow-up.");
-      return;
-    }
 
     try {
       setLoading(true);
 
-      const formData = new FormData();
-      formData.append("password", password);
-      formData.append("message", newMessage);
+      let response;
 
-      // append files only if reporter and files selected
-      if (userRole === "reporter" && selectedFiles.length > 0) {
+      // --------------------------
+      // REPORTER ENDPOINT
+      // --------------------------
+      if (userRole === "reporter") {
+        if (!password) {
+          alert("Password is required for reporter messages.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("message", newMessage);
+        formData.append("password", password);
+
         selectedFiles.forEach((file) => {
           formData.append("evidenceFiles", file);
         });
+
+        response = await api.post("/reports/message", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       }
 
-      // send to backend (multipart/form-data)
-      const res = await api.post("/reports/message", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const data = res.data;
-      if (data && data.success) {
-        // backend returns data.comments and data.evidenceFiles
-        // update local comments state by appending returned comments (if any)
-        if (Array.isArray(data.data?.comments) && data.data.comments.length > 0) {
-          setCommentsState((prev) => [...prev, ...data.data.comments]);
+      // --------------------------
+      // ADMIN ENDPOINT
+      // --------------------------
+      else if (userRole === "admin") {
+        if (!reportId) {
+          alert("reportId is required for admin messages.");
+          return;
         }
 
-        // notify parent so it can update evidenceFiles and comments globally
+        response = await axiosPrivate.post(`/admin/reports/${reportId}/messages`, {
+          message: newMessage,
+        });
+      }
+
+      // --------------------------
+      // AGENCY ENDPOINT
+      // --------------------------
+      else if (userRole === "agency") {
+        if (!reportId) {
+          alert("reportId is required for agency messages.");
+          return;
+        }
+
+        response = await axiosPrivate.post(`/agency/${reportId}/messages`, {
+          message: newMessage,
+        });
+      }
+
+      // --------------------------
+      // Update UI after sending
+      // --------------------------
+      const data = response.data;
+
+      if (data && data.success) {
+        // Update local comments immediately
+        if (Array.isArray(data.data)) {
+          // admin/agency returns comments array only
+          setCommentsState(data.data);
+        } else {
+          // reporter returns {comments, evidenceFiles}
+          setCommentsState(data.data.comments);
+        }
+
+        // Notify parent
         onNewMessage?.(data.data);
 
-        // reset composer
+        // reset input
         setNewMessage("");
         setSelectedFiles([]);
       } else {
@@ -109,8 +160,7 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
         display: "flex",
         flexDirection: "column",
         height: 520,
-      }}
-    >
+      }}>
       <Typography variant="h6" gutterBottom>
         Messages
       </Typography>
@@ -119,7 +169,9 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
       <Box sx={{ flexGrow: 1, overflowY: "auto", mb: 2 }}>
         {commentsState.length === 0 ? (
           <Box sx={{ py: 6, textAlign: "center", color: "text.secondary" }}>
-            <Typography variant="body2">No one has responded to this case</Typography>
+            <Typography variant="body2">
+              No one has responded to this case
+            </Typography>
           </Box>
         ) : (
           commentsState.map((msg, index) => (
@@ -127,10 +179,10 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
               key={msg._id || `msg-${index}`}
               sx={{
                 display: "flex",
-                justifyContent: msg.role === "admin" ? "flex-end" : "flex-start",
+                justifyContent:
+                  msg.role === userRole ? "flex-end" : "flex-start",
                 mb: 2,
-              }}
-            >
+              }}>
               <Box
                 sx={{
                   p: 1.5,
@@ -138,8 +190,7 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
                   maxWidth: "70%",
                   bgcolor: getBgColor(msg.role),
                   color: getTextColor(msg.role),
-                }}
-              >
+                }}>
                 <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
                   {msg.message}
                 </Typography>
@@ -153,14 +204,18 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
                     fontStyle: "italic",
                     fontWeight: "bold",
                     color: "rgba(0,0,0,0.7)",
-                  }}
-                >
+                  }}>
                   — {formatRole(msg.role)}
                 </Typography>
 
                 {/* timestamp */}
-                <Typography variant="caption" display="block" sx={{ opacity: 0.6 }}>
-                  {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
+                <Typography
+                  variant="caption"
+                  display="block"
+                  sx={{ opacity: 0.6 }}>
+                  {msg.createdAt
+                    ? new Date(msg.createdAt).toLocaleString()
+                    : ""}
                 </Typography>
               </Box>
             </Box>
@@ -203,8 +258,7 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
               variant="outlined"
               component="label"
               startIcon={<AttachFileIcon />}
-              disabled={loading}
-            >
+              disabled={loading}>
               Evidence file
               <input type="file" hidden multiple onChange={handleFileChange} />
             </Button>
@@ -214,8 +268,7 @@ const Messages = ({ comments = [], password, userRole, onNewMessage }) => {
             variant="contained"
             color="warning"
             onClick={handleSend}
-            disabled={loading}
-          >
+            disabled={loading}>
             {loading ? "Sending..." : "Send message"}
           </Button>
         </Stack>

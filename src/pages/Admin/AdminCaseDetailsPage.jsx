@@ -8,27 +8,30 @@ import {
   IconButton,
   CircularProgress,
 } from "@mui/material";
+
 import Sidebar from "../../components/Dashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/Layout/Navbar";
 import CaseDetailsInfo from "../../components/Dashboard/Cases/CaseDetailsInfo";
-import CaseMessages from "../../components/Dashboard/Cases/CaseMessages";
+import Messages from "../../components/Reports/Messages";
 import CaseTools from "../../components/Dashboard/Cases/CaseTools";
 import CaseInternalNotes from "../../components/Dashboard/Cases/CaseInternalNotes";
+
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+
 import { useReport } from "../../context/ReportContext";
 
 const CaseDetailsPage = () => {
   const navigate = useNavigate();
   const { caseId } = useParams();
+  const { selectedReport, fetchReportById, updateSelectedReportComments } = useReport();
 
-  const { selectedReport, fetchReportById } = useReport();
-  // 🧠 Fetch the report details once we have the id
+  // Fetch report on load
   useEffect(() => {
     if (caseId) fetchReportById(caseId);
   }, [caseId]);
 
-  // Not found or still loading
+  // Still loading (nothing fetched yet)
   if (!selectedReport) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
@@ -45,7 +48,7 @@ const CaseDetailsPage = () => {
         <Navbar />
 
         <Box sx={{ p: 3, mt: 8 }}>
-          {/* Header Section */}
+          {/* Header */}
           <Box
             sx={{
               display: "flex",
@@ -54,10 +57,13 @@ const CaseDetailsPage = () => {
               mb: 5,
               pl: 2,
               pt: 4,
-            }}>
+            }}
+          >
+            {/* Back button */}
             <Box
               sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
-              onClick={() => navigate(-1)}>
+              onClick={() => navigate(-1)}
+            >
               <IconButton aria-label="Go back">
                 <ArrowBackIcon />
               </IconButton>
@@ -66,6 +72,7 @@ const CaseDetailsPage = () => {
               </Typography>
             </Box>
 
+            {/* Export */}
             <Button
               disableElevation
               variant="contained"
@@ -77,21 +84,30 @@ const CaseDetailsPage = () => {
                 backgroundColor: "#f6f6f6",
                 textTransform: "none",
               }}
-              onClick={() =>
-                console.log("Exporting case:", selectedReport._id)
-              }>
+              onClick={() => console.log("Export case:", selectedReport._id)}
+            >
               Export
             </Button>
           </Box>
 
           <Grid container spacing={3}>
-            {/* Left Column */}
+            {/* MAIN LEFT COLUMN */}
             <Grid item xs={12} md={8}>
-              <CaseDetailsInfo caseData={selectedReport} />
-              <CaseMessages caseId={selectedReport._id} />
+              <CaseDetailsInfo caseDetails={selectedReport} />
+
+              {/* Messages Section */}
+              <Messages
+                reportId={selectedReport._id}
+                comments={selectedReport.comments}
+                userRole="admin"
+                onNewMessage={(updatedData) => {
+                  // updatedData is array of comments (admin controller response)
+                  updateSelectedReportComments(updatedData);
+                }}
+              />
             </Grid>
 
-            {/* Right Column */}
+            {/* RIGHT COLUMN */}
             <Grid item xs={12} md={4}>
               <CaseTools report={selectedReport} />
               <CaseInternalNotes caseId={selectedReport._id} />

@@ -1,9 +1,9 @@
 import { Box, Typography } from "@mui/material";
 import Sidebar from "../../components/Dashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/Layout/Navbar";
-import CaseSummaryCard from "../../components/Dashboard/CaseSummaryCard";
-import UnAssignedCasesTable from "../../components/Dashboard/UnAssignedCasesTable";
-import DashboardStats from "../../components/Dashboard/DashboardStats";
+import CaseSummaryCard from "../../components/Dashboard/Cases/CaseSummaryCard";
+import UnAssignedCasesTable from "../../components/Dashboard/Cases/UnAssignedCasesTable";
+import DashboardStats from "../../components/Dashboard/Statistics/DashboardStats";
 
 const AdminDashboard = () => {
   return (

@@ -4,7 +4,7 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import Sidebar from "../../components/Dashboard/AgencyDashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/AgencyDashboard/Layout/Navbar";
 import CasesHeader from "../../components/Dashboard/Cases/CasesHeader";
-import AssignedCasesTable from "../../components/Dashboard/AssignedCasesTable";
+import AllCasesTable from "../../components/Dashboard/Cases/AllCasesTable";
 
 const AgencyCasePage = () => {
   return (
@@ -44,7 +44,7 @@ const AgencyCasePage = () => {
 
           <CasesHeader />
           {/* Assigned Cases Table */}
-          <AssignedCasesTable />
+          <AllCasesTable />
         </Box>
       </Box>
     </Box>

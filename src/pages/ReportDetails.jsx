@@ -129,7 +129,8 @@ const ReportDetailsPage = () => {
               <Messages
                 comments={comments || []}
                 password={password}
-                userRole={reporterType} // pass reporterType as userRole
+                userRole="reporter"
+                reporterType={reporterType}
                 onNewMessage={(updatedData) => {
                   setComments(updatedData.comments || []);
                   setEvidenceFiles(updatedData.evidenceFiles || []);

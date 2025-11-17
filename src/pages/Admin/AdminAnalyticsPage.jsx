@@ -2,7 +2,7 @@ import { Box, Typography } from "@mui/material";
 
 import Sidebar from "../../components/Dashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/Layout/Navbar";
-import AnalyticsCharts from "../../components/Dashboard/AnalyticsCharts";
+import AnalyticsCharts from "../../components/Dashboard/Statistics/AnalyticsCharts";
 const AdminAnalyticsPage = () => {
   return (
     <Box sx={{ display: "flex" }}>

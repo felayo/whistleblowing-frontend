@@ -3,12 +3,13 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
-import { useReport } from "../../context/ReportContext";
+import { useReport } from "../../../context/ReportContext";
 const CaseSummaryCard = () => {
   const { reports, reportCount } = useReport();
+  // console.log("Reports in CaseSummaryCard:", reports);
 
   const resolvedCases =
-    reports?.filter((r) => r.status === "resolved").length || 0;
+    reports?.filter((r) => r.isResolved === true).length || 0;
   const closedCases = reports?.filter((r) => r.status === "closed").length || 0;
   const openCases = reports?.filter((r) => r.status !== "closed").length || 0;
 

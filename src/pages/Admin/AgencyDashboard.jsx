@@ -1,7 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import Sidebar from "../../components/Dashboard/AgencyDashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/AgencyDashboard/Layout/Navbar";
-import AssignedCasesTable from "../../components/Dashboard/AssignedCasesTable";
+import AllCasesTable from "../../components/Dashboard/Cases/AllCasesTable";
 
 const AgencyDashboard = () => {
   return (
@@ -23,7 +23,7 @@ const AgencyDashboard = () => {
             Assigned to me
           </Typography>
 
-          <AssignedCasesTable />
+          <AllCasesTable />
         </Box>
       </Box>
     </Box>

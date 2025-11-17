@@ -16,7 +16,7 @@ import useAxiosPrivate from "../../../hooks/useAxiosPrivate";
 const CaseTools = ({ report }) => {
   const axiosPrivate = useAxiosPrivate();
   const { categories, agencies, loading: dataLoading } = useAdminData();
-  const { fetchReportById, fetchUnassignedReports } = useReport();
+  const { fetchReportById, fetchAllReports } = useReport();
 
   const [category, setCategory] = useState(report?.category?._id || "");
   const [status, setStatus] = useState(report?.status || "pending");
@@ -43,7 +43,7 @@ const CaseTools = ({ report }) => {
     setSaving(true);
     setMessage("");
     const id = report._id;
-    let shouldRefreshUnassigned = false;
+    let shouldRefreshAllReports = false;
 
     try {
       // Update Category
@@ -58,6 +58,7 @@ const CaseTools = ({ report }) => {
         await axiosPrivate.patch(`/admin/reports/${id}/status`, {
           status: status,
         });
+        shouldRefreshAllReports = true;
       }
 
       // Update Assigned To
@@ -65,14 +66,14 @@ const CaseTools = ({ report }) => {
         await axiosPrivate.patch(`/admin/reports/${id}/assign`, {
           agencyId: assignedTo,
         });
-        shouldRefreshUnassigned = true;
+        shouldRefreshAllReports = true;
       }
       // Always refresh the current report
       await fetchReportById(id);
 
-      // Only refetch unassigned if assignment changed
-      if (shouldRefreshUnassigned) {
-        await fetchUnassignedReports();
+      // Only refetch all reports once report status change changed
+      if (shouldRefreshAllReports) {
+        await fetchAllReports();
       }
 
       setMessage("✅ Changes saved successfully.");
