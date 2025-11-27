@@ -99,6 +99,24 @@ const CaseDetailsInfo = ({ caseDetails }) => {
           <Grid item xs={8}>
             <Typography variant="body2">{caseDetails.description}</Typography>
           </Grid>
+
+          <Grid item xs={4}>
+            <Typography variant="body2" color="text.secondary">
+              Category
+            </Typography>
+          </Grid>
+          <Grid item xs={8}>
+            <Typography variant="body2">{caseDetails?.category?.name}</Typography>
+          </Grid>
+
+          <Grid item xs={4}>
+            <Typography variant="body2" color="text.secondary">
+              Agency Assigned
+            </Typography>
+          </Grid>
+          <Grid item xs={8}>
+            <Typography variant="body2">{caseDetails?.agencyAssigned?.name}</Typography>
+          </Grid>
           {caseDetails.reporterType === "confidential" && (
             <>
               <Grid item xs={4}>

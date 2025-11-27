@@ -1,44 +1,76 @@
-import { useState } from "react";
-import { Box, Button, Typography, Avatar } from "@mui/material";
+import { useState, useMemo } from "react";
+import {
+  Box,
+  Button,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  MenuItem,
+  Chip,
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { Link } from "react-router-dom"; // import Link
+import { Link } from "react-router-dom";
 
 import CreateUsersDialog from "./CreateUserDialog";
+import { useAdminData } from "../../../context/AdminDataContext";
 
 const User = () => {
-  const users = [
-    { id: 1, initials: "AF", name: "LAWMA", email: "aijay@email.com" },
-    { id: 2, initials: "BA", name: "LASAA", email: "aijay@email.com" },
-    { id: 3, initials: "AC", name: "LASEMA", email: "aijay@email.com" },
-    { id: 4, initials: "FF", name: "KAI", email: "aijay@email.com" },
-    { id: 5, initials: "ZF", name: "LASEPA", email: "aijay@email.com" },
-    { id: 6, initials: "AF", name: "LASPARK", email: "aijay@email.com" },
-  ];
-
+  const { users = [], agencies = [], loading } = useAdminData();
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [agencyFilter, setAgencyFilter] = useState("");
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const handleSubmit = () => {
-    console.log("Create user Submitted Successfully");
-    // TODO: Add form submission logic here
-  };
+  console.log("Users:", users);
+  const getAgencyName = (user) =>
+  user?.agency?.name ?? "Independent";
+
+  // === FILTERED USERS BASED ON SEARCH + AGENCY FILTER ===
+ const filteredUsers = useMemo(() => {
+  return (users || [])
+    .filter((u) => {
+      // 🚫 Exclude all admin users
+      if (u.role === "admin") return false;
+
+      const fullName = `${u.firstname || ""} ${u.lastname || ""}`.toLowerCase();
+
+      const matchesSearch =
+        fullName.includes(search.toLowerCase()) ||
+        (u.username || "").toLowerCase().includes(search.toLowerCase());
+
+      const matchesAgency =
+        !agencyFilter || u.agency?._id === agencyFilter;
+
+      return matchesSearch && matchesAgency;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}, [users, search, agencyFilter]);
+
 
   return (
-    <Box>
+    <Box sx={{ p: 2 }}>
+      {/* ---- Page Header ---- */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 2,
-          pl: 2,
+          mb: 3,
+          pl: 1,
         }}
       >
-        <Typography variant="h5" fontWeight="bold" pt={3} gutterBottom>
+        <Typography variant="h5" fontWeight="bold" pt={1}>
           Users
         </Typography>
+
         <Button
           disableElevation
           variant="contained"
@@ -54,69 +86,100 @@ const User = () => {
         >
           Create
         </Button>
-        <CreateUsersDialog
-          open={open}
-          onClose={handleClose}
-          onSubmit={handleSubmit}
+
+        <CreateUsersDialog open={open} onClose={handleClose} agencies={agencies} />
+      </Box>
+
+      {/* ---- Filters ---- */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, px: 1 }}>
+        <TextField
+          label="Search users..."
+          variant="outlined"
+          fullWidth
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
+
+        <TextField
+          select
+          label="Filter by agency"
+          value={agencyFilter}
+          onChange={(e) => setAgencyFilter(e.target.value)}
+          sx={{ width: 250 }}
+        >
+          <MenuItem value="">All Agencies</MenuItem>
+          {agencies.map((agency) => (
+            <MenuItem key={agency._id} value={agency._id}>
+              {agency.name}
+            </MenuItem>
+          ))}
+        </TextField>
       </Box>
-      <Box
-        sx={{
-          bgcolor: "white",
-          borderRadius: 1,
-          border: "1px solid #e0e0e0",
-          overflow: "hidden",
-          marginLeft: 4,
-          marginRight: 4,
-        }}
-      >
-        {users.map((user, index) => (
-          <Link
-            key={user.id}
-            to={`/admin/users/${user.id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                p: 3,
-                borderBottom:
-                  index < users.length - 1 ? "1px solid #e0e0e0" : "none",
-                gap: 2,
-                cursor: "pointer",
-                "&:hover": {
-                  backgroundColor: "#f9f9f9",
-                },
-              }}
-            >
-              <Avatar
-                sx={{
-                  bgcolor: "#ff8c00",
-                  width: 40,
-                  height: 40,
-                  fontSize: "1rem",
-                  fontWeight: "bold",
-                }}
-              >
-                {user.initials}
-              </Avatar>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body1" fontWeight="medium">
-                  {user.name}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.875rem" }}
-                >
-                  {user.email}
-                </Typography>
-              </Box>
-            </Box>
-          </Link>
-        ))}
-      </Box>
+
+      {/* ---- Users Table ---- */}
+      <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: "hidden" }}>
+        <Table>
+          <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+            <TableRow>
+              <TableCell>Agency</TableCell>
+              <TableCell>First Name</TableCell>
+              <TableCell>Last Name</TableCell>
+              <TableCell>Username</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell>Action</TableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            )}
+
+            {!loading && filteredUsers.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  No users found
+                </TableCell>
+              </TableRow>
+            )}
+
+            {!loading &&
+              filteredUsers.map((user) => (
+                <TableRow key={user._id} hover>
+                  <TableCell>{getAgencyName(user)}</TableCell>
+                  <TableCell>{user.firstname}</TableCell>
+                  <TableCell>{user.lastname}</TableCell>
+                  <TableCell>{user.username}</TableCell>
+
+                  <TableCell>
+                    <Chip
+                      label={user.active ? "Active" : "Inactive"}
+                      color={user.active ? "success" : "default"}
+                      size="small"
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
+
+                  <TableCell>
+                    <Link to={`/admin/users/${user._id}`}>
+                      <Button variant="outlined" size="small" sx={{ textTransform: "none" }}>
+                        View
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Box>
   );
 };

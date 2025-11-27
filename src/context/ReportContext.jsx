@@ -8,6 +8,7 @@ export const ReportProvider = ({ children }) => {
   const { auth } = useContext(AuthContext);
   const token = auth?.accessToken;
   const axiosPrivate = useAxiosPrivate();
+
   const [reports, setReports] = useState([]);
   const [reportCount, setReportCount] = useState(0);
   const [unassignedReports, setUnassignedReports] = useState([]);

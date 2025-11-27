@@ -2,7 +2,7 @@ import { Box, Typography } from "@mui/material";
 
 import Sidebar from "../../components/Dashboard/AgencyDashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/AgencyDashboard/Layout/Navbar";
-import AnalyticsCharts from "../../components/Dashboard/Statistics/AnalyticsCharts";
+import AgencyAnalyticsCharts from "../../components/Dashboard/AgencyDashboard/AgencyAnalyticsCharts";
 const AgencyAnalyticsPage = () => {
   return (
     <Box sx={{ display: "flex" }}>
@@ -17,7 +17,7 @@ const AgencyAnalyticsPage = () => {
           <Typography variant="h5" fontWeight="bold" pb={3} pt={3} gutterBottom>
             Analytics
           </Typography>
-          <AnalyticsCharts />
+          <AgencyAnalyticsCharts />
         </Box>
       </Box>
     </Box>

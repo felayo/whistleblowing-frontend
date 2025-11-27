@@ -1,4 +1,5 @@
-import { useState } from "react";
+// components/AnalyticsCharts.jsx
+import { useState, useMemo } from "react";
 import {
   Grid,
   Paper,
@@ -26,72 +27,106 @@ import {
   Bar,
   ResponsiveContainer,
 } from "recharts";
+import { useReport } from "../../../context/ReportContext";
 
-// --- Sample Data ---
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#A020F0"];
 
-const rawData = {
-  caseTrends: [
-    { month: "Jan", opened: 40, closed: 20, type: "Vandalism", status: "Resolved" },
-    { month: "Feb", opened: 60, closed: 35, type: "Fraud", status: "Pending" },
-    { month: "Mar", opened: 50, closed: 40, type: "Corruption", status: "Resolved" },
-    { month: "Apr", opened: 70, closed: 50, type: "Vandalism", status: "In Progress" },
-    { month: "May", opened: 90, closed: 60, type: "Harassment", status: "Pending" },
-  ],
-  categories: [
-    { name: "Vandalism", value: 45 },
-    { name: "Fraud", value: 25 },
-    { name: "Corruption", value: 15 },
-    { name: "Harassment", value: 10 },
-    { name: "Others", value: 5 },
-  ],
-  resolutionStatus: [
-    { name: "Resolved", value: 120 },
-    { name: "Pending", value: 80 },
-    { name: "In Progress", value: 50 },
-  ],
-  topIssues: [
-    { issue: "Streetlight Vandalism", reports: 40 },
-    { issue: "Pipeline Damage", reports: 30 },
-    { issue: "Road Misuse", reports: 25 },
-    { issue: "Bribery", reports: 20 },
-    { issue: "Fraudulent Billing", reports: 15 },
-  ],
-  agencyPerformance: [
-    { agency: "LASMA", handled: 120, pending: 30 },
-    { agency: "LAWMA", handled: 90, pending: 40 },
-    { agency: "Police", handled: 150, pending: 50 },
-    { agency: "Ministry of Works", handled: 60, pending: 20 },
-  ],
-};
-
 const AnalyticsCharts = () => {
+  const { reports } = useReport();
+
   // --- State for Filters ---
   const [caseType, setCaseType] = useState("All");
   const [status, setStatus] = useState("All");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [filteredData, setFilteredData] = useState(rawData);
 
-  const handleApplyFilters = () => {
-    // Mock filtering (you can replace with backend API later)
-    let trends = rawData.caseTrends;
+  /** ===========================
+   *  Filtered Reports
+   * ============================*/
+  const filteredReports = useMemo(() => {
+    if (!reports) return [];
 
-    if (caseType !== "All") {
-      trends = trends.filter((t) => t.type === caseType);
-    }
-    if (status !== "All") {
-      trends = trends.filter((t) => t.status === status);
-    }
-    // Date filter (mock: not implemented fully since data lacks actual dates)
+    return reports.filter((r) => {
+      const matchType = caseType === "All" || r.category?.name === caseType;
+      const matchStatus = status === "All" || r.status === status;
 
-    setFilteredData({
-      ...rawData,
-      caseTrends: trends,
+      let matchDate = true;
+      if (dateFrom) matchDate = new Date(r.createdAt) >= new Date(dateFrom);
+      if (dateTo) matchDate = matchDate && new Date(r.createdAt) <= new Date(dateTo);
+
+      return matchType && matchStatus && matchDate;
     });
+  }, [reports, caseType, status, dateFrom, dateTo]);
 
-    console.log("Filters applied:", { caseType, status, dateFrom, dateTo });
-  };
+  /** ===========================
+   *  Cases by Month (Line Chart)
+   * ============================*/
+  const caseTrends = useMemo(() => {
+    const trendsMap = {};
+    filteredReports.forEach((r) => {
+      const month = new Date(r.createdAt).toLocaleString("default", { month: "short" });
+      if (!trendsMap[month]) trendsMap[month] = { month, opened: 0, closed: 0 };
+      trendsMap[month].opened++;
+      if (r.isResolved) trendsMap[month].closed++;
+    });
+    return Object.values(trendsMap);
+  }, [filteredReports]);
+
+  /** ===========================
+   *  Categories Pie Chart
+   * ============================*/
+  const categoriesData = useMemo(() => {
+    const catMap = {};
+    filteredReports.forEach((r) => {
+      const name = r.category?.name || "Uncategorised";
+      if (!catMap[name]) catMap[name] = 0;
+      catMap[name]++;
+    });
+    return Object.keys(catMap).map((key) => ({ name: key, value: catMap[key] }));
+  }, [filteredReports]);
+
+  /** ===========================
+   *  Resolution Status Bar Chart
+   * ============================*/
+  const resolutionData = useMemo(() => {
+    const statusMap = {};
+    filteredReports.forEach((r) => {
+      const st = r.status || "Unknown";
+      if (!statusMap[st]) statusMap[st] = 0;
+      statusMap[st]++;
+    });
+    return Object.keys(statusMap).map((key) => ({ name: key, value: statusMap[key] }));
+  }, [filteredReports]);
+
+  /** ===========================
+   *  Top Issues (most reported titles)
+   * ============================*/
+  const topIssues = useMemo(() => {
+    const issueMap = {};
+    filteredReports.forEach((r) => {
+      const t = r.title || "Untitled";
+      if (!issueMap[t]) issueMap[t] = 0;
+      issueMap[t]++;
+    });
+    const sorted = Object.keys(issueMap)
+      .map((k) => ({ issue: k, reports: issueMap[k] }))
+      .sort((a, b) => b.reports - a.reports);
+    return sorted.slice(0, 5);
+  }, [filteredReports]);
+
+  /** ===========================
+   *  Agency Performance
+   * ============================*/
+  const agencyPerformance = useMemo(() => {
+    const agencyMap = {};
+    filteredReports.forEach((r) => {
+      const agencyName = r.agencyAssigned?.name || "Unassigned";
+      if (!agencyMap[agencyName]) agencyMap[agencyName] = { agency: agencyName, handled: 0, pending: 0 };
+      agencyMap[agencyName].handled++;
+      if (!r.isResolved) agencyMap[agencyName].pending++;
+    });
+    return Object.values(agencyMap);
+  }, [filteredReports]);
 
   return (
     <Box>
@@ -108,10 +143,9 @@ const AnalyticsCharts = () => {
                 onChange={(e) => setCaseType(e.target.value)}
               >
                 <MenuItem value="All">All</MenuItem>
-                <MenuItem value="Vandalism">Vandalism</MenuItem>
-                <MenuItem value="Fraud">Fraud</MenuItem>
-                <MenuItem value="Corruption">Corruption</MenuItem>
-                <MenuItem value="Harassment">Harassment</MenuItem>
+                {Array.from(new Set(reports?.map(r => r.category?.name || "Uncategorised"))).map((cat) => (
+                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
@@ -126,9 +160,9 @@ const AnalyticsCharts = () => {
                 onChange={(e) => setStatus(e.target.value)}
               >
                 <MenuItem value="All">All</MenuItem>
-                <MenuItem value="Resolved">Resolved</MenuItem>
-                <MenuItem value="Pending">Pending</MenuItem>
-                <MenuItem value="In Progress">In Progress</MenuItem>
+                {Array.from(new Set(reports?.map(r => r.status))).map((st) => (
+                  <MenuItem key={st} value={st}>{st}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
@@ -163,7 +197,7 @@ const AnalyticsCharts = () => {
               variant="contained"
               color="primary"
               fullWidth
-              onClick={handleApplyFilters}
+              onClick={() => {}}
             >
               Apply
             </Button>
@@ -176,11 +210,9 @@ const AnalyticsCharts = () => {
         {/* Case Trends */}
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Case Trends Over Time
-            </Typography>
+            <Typography variant="h6" gutterBottom>Case Trends Over Time</Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={filteredData.caseTrends}>
+              <LineChart data={caseTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -196,28 +228,21 @@ const AnalyticsCharts = () => {
         {/* Categories Breakdown */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Case Categories
-            </Typography>
+            <Typography variant="h6" gutterBottom>Case Categories</Typography>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={filteredData.categories}
+                  data={categoriesData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {filteredData.categories.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
+                  {categoriesData.map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -229,11 +254,9 @@ const AnalyticsCharts = () => {
         {/* Resolution Status */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Resolution Status
-            </Typography>
+            <Typography variant="h6" gutterBottom>Resolution Status</Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={filteredData.resolutionStatus}>
+              <BarChart data={resolutionData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -247,11 +270,9 @@ const AnalyticsCharts = () => {
         {/* Top Issues */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Top Reported Issues
-            </Typography>
+            <Typography variant="h6" gutterBottom>Top Reported Issues</Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={filteredData.topIssues} layout="vertical">
+              <BarChart data={topIssues} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="issue" type="category" />
@@ -269,7 +290,7 @@ const AnalyticsCharts = () => {
               Agencies Performance (Handled vs Pending Cases)
             </Typography>
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={filteredData.agencyPerformance}>
+              <BarChart data={agencyPerformance}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="agency" />
                 <YAxis />

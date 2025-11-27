@@ -12,6 +12,7 @@ export const AdminDataProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [agencies, setAgencies] = useState([]);
   const [users, setUsers] = useState([]);
+  const [singleUser, setSingleUser] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -49,6 +50,23 @@ export const AdminDataProvider = ({ children }) => {
     }
   };
 
+  // ========== FETCH SINGLE USER ==========
+  const fetchUser = async (userId) => {
+    if (!userId) return;
+    setSingleUser(null);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await axiosPrivate.get(`/admin/users/${userId}`);
+      if (res?.data?.success) setSingleUser(res.data.data);
+    } catch (err) {
+      console.error("❌ Error fetching user:", err);
+      setError(err.response?.data?.message || "Failed to load user");
+    }finally {
+      setLoading(false);
+    }
+  };
+
   // ========== FETCH WHEN TOKEN IS READY ==========
   useEffect(() => {
     if (token) {
@@ -77,11 +95,13 @@ export const AdminDataProvider = ({ children }) => {
         categories,
         agencies,
         users,
+        singleUser,
         loading,
         error,
         refreshCategories: fetchCategories,
         refreshAgencies: fetchAgencies,
         refreshUsers: fetchUsers,
+        fetchUser,
       }}
     >
       {children}

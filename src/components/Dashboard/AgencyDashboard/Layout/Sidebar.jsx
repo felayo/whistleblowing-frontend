@@ -25,7 +25,16 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
-  const { logout } = useContext(AuthContext);
+  const { logout, auth } = useContext(AuthContext);
+  console.log("Auth in Sidebar:", auth);
+  const id = auth?.user?.id;
+
+  const menuItems = [
+  { text: "Dashboard", icon: <DashboardIcon />, link: "/agency/dashboard" },
+  { text: "Cases", icon: <DescriptionIcon />, link: "/agency/cases" },
+  { text: "Statistics", icon: <BarChartIcon />, link: "/agency/analytics" },
+  { text: "Settings", icon: <PeopleIcon />, link: `/agency/settings/${id}` },
+ ];
   return (
     <Drawer variant="permanent" sx={{ width: 240, flexShrink: 0 }}>
       <Box

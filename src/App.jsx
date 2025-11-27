@@ -17,12 +17,14 @@ import Categories from "./pages/Admin/AdminCategoriesPage";
 import Users from "./pages/Admin/AdminUsersPage";
 import AdminCaseDetailsPage from "./pages/Admin/AdminCaseDetailsPage";
 import AdminUserDetailsPage from "./pages/Admin/AdminUserDetailsPage";
+import AdminAgencyUsersDetail from "./pages/Admin/AdminAgencyUsersDetail";
 
 // Agency Dashboard page
 import AgencyDashboard from "./pages/Admin/AgencyDashboard";
 import AgencyCasesPage from "./pages/Admin/AgencyCasesPage";
 import AgencyAnalyticsPage from "./pages/Admin/AgencyAnalyticsPage";
 import AgencySettingsPage from "./pages/Admin/AgencySettingsPage";
+import AgencyCaseDetailsPage from "./pages/Admin/AgencyCaseDetailsPage";
 
 function App() {
   return (
@@ -42,6 +44,7 @@ function App() {
         <Route path="/admin/agency" element={<AdminAgencyPage />} />
         <Route path="/admin/categories" element={<Categories />} />
         <Route path="/admin/users" element={<Users />} />
+        <Route path="/admin/agencies/:agencyId/users" element={<AdminAgencyUsersDetail />} />
         <Route path="/admin/cases/:caseId" element={<AdminCaseDetailsPage />} />
         <Route path="/admin/users/:userId" element={<AdminUserDetailsPage />} />
       </Route>
@@ -49,7 +52,8 @@ function App() {
         <Route path="/agency/dashboard" element={<AgencyDashboard />} />
         <Route path="/agency/cases" element={<AgencyCasesPage />} />
         <Route path="/agency/analytics" element={<AgencyAnalyticsPage />} />
-        <Route path="/agency/settings" element={<AgencySettingsPage />} />
+        <Route path="/agency/settings/:userId" element={<AgencySettingsPage />} />
+        <Route path="/agency/cases/:caseId" element={<AgencyCaseDetailsPage />} />
       </Route>
       {/* Fallback for unknown paths */}
       <Route path="*" element={<Navigate to="/" replace />} />

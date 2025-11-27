@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { saveAs } from "file-saver"; 
 import Papa from "papaparse"; // 
 import { Box, Typography, Button } from "@mui/material";
@@ -11,9 +11,9 @@ import AllCasesTable from "../../components/Dashboard/Cases/AllCasesTable";
 
 import { useReport } from "../../context/ReportContext";
 
-const AdminCasesPage = () => {
+const CasesPage = () => {
   const { reports } = useReport();
-
+  
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState("all");
 
@@ -77,4 +77,4 @@ const AdminCasesPage = () => {
   );
 };
 
-export default AdminCasesPage;
+export default CasesPage;

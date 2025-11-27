@@ -37,7 +37,7 @@ const Navbar = () => {
         </IconButton>
 
         {/* User Avatar */}
-        <Avatar sx={{ bgcolor: "#ff8c00" }}>AA</Avatar>
+        <Avatar sx={{ bgcolor: "#ff8c00" }}></Avatar>
       </Toolbar>
     </AppBar>
   );

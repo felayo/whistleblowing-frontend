@@ -25,7 +25,6 @@ const CaseDetailsPage = () => {
   const navigate = useNavigate();
   const { caseId } = useParams();
   const { selectedReport, fetchReportById, updateSelectedReportComments } = useReport();
-
   // Fetch report on load
   useEffect(() => {
     if (caseId) fetchReportById(caseId);

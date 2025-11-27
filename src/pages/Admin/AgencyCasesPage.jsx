@@ -1,12 +1,42 @@
+import { useState } from "react";
+import { saveAs } from "file-saver"; 
+import Papa from "papaparse"; 
 import { Box, Typography, Button } from "@mui/material";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
 import Sidebar from "../../components/Dashboard/AgencyDashboard/Layout/Sidebar";
 import Navbar from "../../components/Dashboard/AgencyDashboard/Layout/Navbar";
 import CasesHeader from "../../components/Dashboard/Cases/CasesHeader";
-import AllCasesTable from "../../components/Dashboard/Cases/AllCasesTable";
+import AgencyCasesTable from "../../components/Dashboard/AgencyDashboard/AgencyCasesTable";
+import { useAgencyReport } from "../../context/AgencyReportContext";
 
 const AgencyCasePage = () => {
+  const { agencyReports } = useAgencyReport(); 
+
+   const [search, setSearch] = useState("");
+   const [period, setPeriod] = useState("all");
+  
+   const handleExport = () => {
+    if (!agencyReports || agencyReports.length === 0) return;
+  
+    // Map the report data to a simple object structure
+    const exportData = agencyReports.map((r) => ({
+      "Case ID": r.caseID,
+      "Title": r.title,
+      "Category": r.category?.name || "-",
+      "Agency": r.agencyAssigned?.name || "-",
+      "Status": r.status,
+      "Created At": new Date(r.createdAt).toLocaleString(),
+    }));
+  
+    // Convert to CSV
+    const csv = Papa.unparse(exportData);
+  
+    // Save as file
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, `cases_export_${new Date().toISOString()}.csv`);
+  };
+  
   return (
     <Box sx={{ display: "flex" }}>
       <Sidebar />
@@ -37,14 +67,20 @@ const AgencyCasePage = () => {
             <Button
               variant="outlined"
               startIcon={<FileDownloadIcon />}
-              sx={{ textTransform: "none" }}>
+              sx={{ textTransform: "none" }}
+              onClick={handleExport}
+            >
               Export
             </Button>
           </Box>
 
-          <CasesHeader />
+          <CasesHeader
+            period={period}
+            onSearchChange={setSearch}
+            onPeriodChange={setPeriod}
+          />
           {/* Assigned Cases Table */}
-          <AllCasesTable />
+          <AgencyCasesTable search={search} period={period}/>
         </Box>
       </Box>
     </Box>
