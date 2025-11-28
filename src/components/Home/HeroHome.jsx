@@ -18,6 +18,8 @@ import { useTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const Hero = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -34,7 +36,7 @@ const Hero = () => {
     const fetchScorecard = async () => {
       try {
         const res = await axios.get(
-          "https://whistleblowing-api.onrender.com/api/scorecard"
+          `${BASE_URL}/scorecard`
         );
         let { agencies, summary } = res.data;
 
